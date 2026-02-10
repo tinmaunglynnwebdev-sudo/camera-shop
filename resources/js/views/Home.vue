@@ -1,0 +1,166 @@
+<template>
+  <div>
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl overflow-hidden mb-12 shadow-2xl relative">
+      <div class="absolute inset-0 bg-black/20"></div>
+      <div class="relative z-10 px-8 py-16 md:py-24 md:px-16 text-center md:text-left">
+        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+          Capture Your <br class="hidden md:block" />
+          <span class="text-blue-400">Perfect Moment</span>
+        </h1>
+        <p class="text-gray-300 text-lg md:text-xl mb-8 max-w-xl">
+          Discover professional-grade cameras and lenses for every photographer.
+        </p>
+        <button class="bg-blue-600 text-white px-8 py-3.5 rounded-full font-bold hover:bg-blue-700 transition shadow-lg hover:shadow-blue-600/30 transform hover:-translate-y-1">
+          Shop Now
+        </button>
+      </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-8">
+      <!-- Sidebar Filters -->
+      <aside class="w-full md:w-64 shrink-0">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 sticky top-24">
+          <div class="mb-8">
+            <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <FunnelIcon class="w-5 h-5 text-blue-600" /> Filters
+            </h3>
+            
+            <div class="mb-6">
+              <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Categories</h4>
+              <div class="space-y-2">
+                <label v-for="cat in categories" :key="cat.id" class="flex items-center gap-3 cursor-pointer group">
+                  <div class="relative flex items-center">
+                    <input 
+                      type="checkbox" 
+                      :value="cat.slug" 
+                      v-model="selectedCategories"
+                      class="peer h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition"
+                    >
+                  </div>
+                  <span class="text-gray-600 group-hover:text-blue-600 transition">{{ cat.name }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Brands</h4>
+               <!-- Hardcoded brands for demo if API doesn't support yet, ideally fetch from API -->
+               <div class="space-y-2">
+                 <label v-for="brand in brands" :key="brand" class="flex items-center gap-3 cursor-pointer group">
+                  <input type="checkbox" :value="brand.toLowerCase()" v-model="selectedBrands" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                  <span class="text-gray-600 group-hover:text-blue-600 transition">{{ brand }}</span>
+                 </label>
+               </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Product Grid -->
+      <div class="flex-1">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">Latest Arrivals</h2>
+          <span class="text-gray-500 text-sm">{{ filteredProducts.length }} products found</span>
+        </div>
+
+        <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+           <!-- Skeletons -->
+           <div v-for="i in 6" :key="i" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-96 animate-pulse">
+             <div class="bg-gray-200 h-48 w-full"></div>
+             <div class="p-5 space-y-3">
+               <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+               <div class="h-6 bg-gray-200 rounded w-3/4"></div>
+               <div class="h-4 bg-gray-200 rounded w-full"></div>
+             </div>
+           </div>
+        </div>
+
+        <div v-else-if="filteredProducts.length === 0" class="text-center py-20 bg-white rounded-xl border border-gray-100">
+            <p class="text-gray-500 text-lg">No products found matching your filters.</p>
+            <button @click="clearFilters" class="mt-4 text-blue-600 font-medium hover:underline">Clear all filters</button>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div v-for="product in filteredProducts" :key="product.id" class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col">
+            <div class="relative h-48 overflow-hidden bg-gray-100">
+              <img :src="product.image" :alt="product.name" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+              <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button @click.prevent="addToCart(product)" class="bg-white text-blue-600 p-2 rounded-full shadow-lg hover:bg-blue-600 hover:text-white transition">
+                  <PlusIcon class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div class="p-5 flex flex-col flex-1">
+              <div class="text-xs font-bold text-blue-600 mb-1 uppercase tracking-wide">{{ product.brand?.name }}</div>
+              <router-link :to="'/product/' + product.slug" class="block">
+                <h2 class="text-lg font-bold text-gray-900 mb-2 leading-tight hover:text-blue-600 transition">{{ product.name }}</h2>
+              </router-link>
+              <p class="text-gray-500 text-sm mb-4 line-clamp-2">{{ product.description }}</p>
+              
+              <div class="mt-auto flex justify-between items-center pt-4 border-t border-gray-50">
+                <span class="text-xl font-bold text-gray-900">${{ parseFloat(product.price).toLocaleString() }}</span>
+                <span class="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">In Stock</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed } from 'vue';
+import axios from 'axios';
+import { useCartStore } from '../stores/cart';
+import { useToastStore } from '../stores/toast';
+import { FunnelIcon, PlusIcon } from '@heroicons/vue/24/outline';
+
+const products = ref([]);
+const categories = ref([]);
+const loading = ref(true);
+const cartStore = useCartStore();
+const toastStore = useToastStore();
+
+const selectedCategories = ref([]);
+const selectedBrands = ref([]);
+const brands = ['Canon', 'Nikon', 'Sony']; // Mock brands for filter
+
+onMounted(async () => {
+  try {
+    const [prodRes, catRes] = await Promise.all([
+      axios.get('/api/products'),
+      axios.get('/api/categories')
+    ]);
+    products.value = prodRes.data;
+    categories.value = catRes.data;
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    toastStore.addToast('Failed to load products', 'error');
+  } finally {
+    loading.value = false;
+  }
+});
+
+const filteredProducts = computed(() => {
+  return products.value.filter(product => {
+    const matchCat = selectedCategories.value.length === 0 || 
+      (product.category && selectedCategories.value.includes(product.category.slug));
+    const matchBrand = selectedBrands.value.length === 0 || 
+      (product.brand && selectedBrands.value.includes(product.brand.slug));
+    return matchCat && matchBrand;
+  });
+});
+
+function addToCart(product) {
+  cartStore.addToCart(product);
+  toastStore.addToast(`Added ${product.name} to cart`);
+}
+
+function clearFilters() {
+  selectedCategories.value = [];
+  selectedBrands.value = [];
+}
+</script>
