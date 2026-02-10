@@ -88,13 +88,36 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-            <input v-model="form.image" type="url" class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea v-model="form.description" rows="3" class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+              <input v-model="form.image" type="url" class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Gallery (JSON Array)</label>
+              <input 
+                :value="JSON.stringify(form.gallery)" 
+                @input="e => form.gallery = JSON.parse(e.target.value || '[]')"
+                placeholder='["url1", "url2"]'
+                class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              >
+            </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea v-model="form.description" rows="4" class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Specifications (Key: Value)</label>
+            <div class="space-y-2">
+              <div v-for="(val, key) in form.specifications" :key="key" class="flex gap-2">
+                <input v-model="tempSpecKeys[key]" @change="updateSpecKey(key)" class="w-1/3 border rounded-lg px-2 py-1 text-sm">
+                <input v-model="form.specifications[key]" class="w-2/3 border rounded-lg px-2 py-1 text-sm">
+                <button type="button" @click="removeSpec(key)" class="text-red-500">&times;</button>
+              </div>
+              <button type="button" @click="addSpec" class="text-blue-600 text-sm font-bold">+ Add Specification</button>
+            </div>
           </div>
 
           <div class="flex justify-end gap-3 pt-4">
@@ -122,7 +145,33 @@ const loading = ref(true);
 const showModal = ref(false);
 const isEditing = ref(false);
 const form = ref({});
+const tempSpecKeys = ref({});
 const toastStore = useToastStore();
+
+function updateSpecKey(oldKey) {
+  const newKey = tempSpecKeys.value[oldKey];
+  if (newKey && newKey !== oldKey) {
+    const value = form.value.specifications[oldKey];
+    delete form.value.specifications[oldKey];
+    form.value.specifications[newKey] = value;
+    
+    // Update the mapping
+    delete tempSpecKeys.value[oldKey];
+    tempSpecKeys.value[newKey] = newKey;
+  }
+}
+
+function addSpec() {
+  if (!form.value.specifications) form.value.specifications = {};
+  const key = `spec_${Object.keys(form.value.specifications).length + 1}`;
+  form.value.specifications[key] = '';
+  tempSpecKeys.value[key] = key;
+}
+
+function removeSpec(key) {
+  delete form.value.specifications[key];
+  delete tempSpecKeys.value[key];
+}
 
 // Mock brands fetching since we didn't create a public API for brands list yet, let's create a quick one or just fetch categories for now and hardcode brands or assume seed data
 // Ideally we should have an API for brands. I will fetch products and extract unique brands or add an endpoint.
@@ -156,12 +205,27 @@ async function fetchData() {
 }
 
 function openModal(product = null) {
+  tempSpecKeys.value = {};
   if (product) {
     isEditing.value = true;
-    form.value = { ...product };
+    form.value = { 
+      ...product, 
+      gallery: Array.isArray(product.gallery) ? product.gallery : [],
+      specifications: product.specifications || {}
+    };
+    // Initialize temp keys
+    Object.keys(form.value.specifications).forEach(k => {
+      tempSpecKeys.value[k] = k;
+    });
   } else {
     isEditing.value = false;
-    form.value = { stock: 0, category_id: categories.value[0]?.id, brand_id: brands.value[0]?.id };
+    form.value = { 
+      stock: 0, 
+      category_id: categories.value[0]?.id, 
+      brand_id: brands.value[0]?.id,
+      gallery: [],
+      specifications: {}
+    };
   }
   showModal.value = true;
 }

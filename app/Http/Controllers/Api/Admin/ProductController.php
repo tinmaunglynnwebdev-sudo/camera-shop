@@ -23,6 +23,8 @@ class ProductController extends Controller
             'price' => 'required|numeric',
             'description' => 'nullable|string',
             'image' => 'nullable|string',
+            'gallery' => 'nullable|array',
+            'specifications' => 'nullable|array',
             'stock' => 'required|integer|min:0',
         ]);
 
