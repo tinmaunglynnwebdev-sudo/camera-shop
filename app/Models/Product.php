@@ -19,7 +19,8 @@ class Product extends Model
         'image', 
         'gallery',
         'specifications',
-        'stock'
+        'stock',
+        'views_count'
     ];
 
     protected $casts = [

@@ -50,4 +50,14 @@ class User extends Authenticatable
             'is_admin' => 'boolean',
         ];
     }
+
+    public function wishlist()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function wishlistProducts()
+    {
+        return $this->belongsToMany(Product::class, 'wishlists');
+    }
 }

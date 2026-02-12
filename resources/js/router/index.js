@@ -5,6 +5,7 @@ import LoginCallback from '../views/LoginCallback.vue';
 import Profile from '../views/Profile.vue';
 import ProductDetail from '../views/ProductDetail.vue';
 import Cart from '../views/Cart.vue';
+import Wishlist from '../views/Wishlist.vue';
 import Checkout from '../views/Checkout.vue';
 import AdminLayout from '../views/admin/AdminLayout.vue';
 import AdminLogin from '../views/admin/Login.vue';
@@ -20,6 +21,7 @@ const routes = [
     { path: '/profile', component: Profile, meta: { requiresAuth: true } },
     { path: '/product/:slug', component: ProductDetail, props: true },
     { path: '/cart', component: Cart },
+    { path: '/wishlist', component: Wishlist, meta: { requiresAuth: true } },
     { path: '/checkout', component: Checkout },
 
     // Admin Routes

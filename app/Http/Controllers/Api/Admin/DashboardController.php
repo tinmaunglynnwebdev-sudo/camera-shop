@@ -74,6 +74,10 @@ class DashboardController extends Controller
         $totalOrders = Order::count();
         $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
+        $mostViewedProducts = Product::orderBy('views_count', 'desc')
+            ->take(5)
+            ->get(['id', 'name', 'views_count', 'price', 'image']);
+
         return response()->json([
             'total_orders' => $totalOrders,
             'total_revenue' => $totalRevenue,
@@ -85,7 +89,8 @@ class DashboardController extends Controller
             'low_stock_count' => Product::where('stock', '<', 5)->count(),
             'recent_orders' => Order::with('user')->latest()->take(5)->get(),
             'sales_trend' => $trendData,
-            'top_categories' => $topCategories
+            'top_categories' => $topCategories,
+            'most_viewed_products' => $mostViewedProducts
         ]);
     }
 }

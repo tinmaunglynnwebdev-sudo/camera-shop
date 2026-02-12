@@ -46,6 +46,20 @@ class ProductController extends Controller
     public function show($slug)
     {
         $product = Product::with(['category', 'brand'])->where('slug', $slug)->firstOrFail();
+        
+        // Increment view count
+        $product->increment('views_count');
+        
         return response()->json($product);
+    }
+
+    public function mostViewed()
+    {
+        $products = Product::with(['category', 'brand'])
+            ->orderBy('views_count', 'desc')
+            ->limit(8)
+            ->get();
+            
+        return response()->json($products);
     }
 }

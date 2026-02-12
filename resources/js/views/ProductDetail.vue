@@ -66,6 +66,10 @@
               <div v-if="product.stock < 5 && product.stock > 0" class="text-orange-600 text-[10px] font-black uppercase tracking-widest animate-pulse">
                 Low Stock: Only {{ product.stock }} Left
               </div>
+              <div class="flex items-center gap-1.5 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                <EyeIcon class="w-4 h-4" />
+                {{ product.views_count?.toLocaleString() }} Views
+              </div>
             </div>
             
             <h1 class="text-4xl md:text-5xl font-black text-gray-900 leading-[1.1] tracking-tighter">
@@ -124,17 +128,27 @@
             </div>
 
             <div class="space-y-3">
-              <button 
-                @click="addToCart" 
-                :disabled="product.stock <= 0"
-                class="w-full group relative overflow-hidden bg-gray-900 text-white py-6 rounded-[1.5rem] font-black text-lg transition-all hover:bg-blue-600 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
-              >
-                <div class="relative z-10 flex items-center justify-center gap-3">
-                  <ShoppingBagIcon class="w-6 h-6 group-hover:animate-bounce" />
-                  Add to Cart — ${{ (parseFloat(product.sale_price || product.price) * quantity).toLocaleString() }}
-                </div>
-              </button>
-              
+              <div class="flex gap-3">
+                <button 
+                  @click="addToCart" 
+                  :disabled="product.stock <= 0"
+                  class="flex-1 group relative overflow-hidden bg-gray-900 text-white py-6 rounded-[1.5rem] font-black text-lg transition-all hover:bg-blue-600 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+                >
+                  <div class="relative z-10 flex items-center justify-center gap-3">
+                    <ShoppingBagIcon class="w-6 h-6 group-hover:animate-bounce" />
+                    Add to Cart — ${{ (parseFloat(product.sale_price || product.price) * quantity).toLocaleString() }}
+                  </div>
+                </button>
+
+                <button 
+                  @click="wishlistStore.toggleWishlist(product)"
+                  class="px-8 bg-white border-2 border-gray-100 rounded-[1.5rem] flex items-center justify-center transition-all hover:border-red-100 hover:bg-red-50 group"
+                  :class="wishlistStore.isInWishlist(product.id) ? 'text-red-500 border-red-100 bg-red-50' : 'text-gray-400'"
+                >
+                  <HeartIcon class="w-6 h-6 transition-transform group-hover:scale-110" :class="{ 'fill-current': wishlistStore.isInWishlist(product.id) }" />
+                </button>
+              </div>
+                
               <button class="w-full bg-blue-50 text-blue-600 py-6 rounded-[1.5rem] font-black text-lg hover:bg-blue-100 transition-colors active:scale-95">
                 Instant Checkout
               </button>
@@ -268,11 +282,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
+import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
 import { useToastStore } from '../stores/toast';
+import { useWishlistStore } from '../stores/wishlist';
 import { 
   ShoppingBagIcon, 
   PlusIcon,
@@ -289,13 +305,24 @@ import {
   StarIcon,
   Battery50Icon,
   SignalIcon,
-  Square3Stack3DIcon
-} from '@heroicons/vue/24/solid';
+  Square3Stack3DIcon,
+  EyeIcon,
+  HeartIcon
+} from '@heroicons/vue/24/outline';
+
+const props = defineProps({
+  slug: {
+    type: String,
+    required: true
+  }
+});
 
 const route = useRoute();
 const product = ref(null);
+const authStore = useAuthStore();
 const cartStore = useCartStore();
 const toastStore = useToastStore();
+const wishlistStore = useWishlistStore();
 const quantity = ref(1);
 const activeImageIndex = ref(0);
 const activeTab = ref('overview');
@@ -337,14 +364,31 @@ function prevImage() {
   activeImageIndex.value = (activeImageIndex.value - 1 + allImages.value.length) % allImages.value.length;
 }
 
-onMounted(async () => {
+const fetchProduct = async () => {
+  if (!props.slug || props.slug === 'undefined') return;
+  
   try {
-    const response = await axios.get(`/api/products/${route.params.slug}`);
+    const response = await axios.get(`/api/products/${props.slug}`);
     product.value = response.data;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    if (authStore.token) {
+      wishlistStore.fetchWishlist();
+    }
   } catch (error) {
     console.error('Error fetching product:', error);
     toastStore.addToast('Failed to load product details', 'error');
+  }
+};
+
+onMounted(() => {
+  fetchProduct();
+});
+
+// Watch for slug changes to re-fetch data when navigating between products
+watch(() => props.slug, (newSlug) => {
+  if (newSlug) {
+    fetchProduct();
   }
 });
 

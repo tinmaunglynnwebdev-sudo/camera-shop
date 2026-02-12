@@ -130,6 +130,17 @@
             </transition>
           </div>
 
+          <!-- Wishlist -->
+          <router-link to="/wishlist" class="relative group p-2 rounded-xl hover:bg-gray-100 transition">
+            <HeartIcon class="w-6 h-6 text-gray-700 group-hover:text-red-500 transition" />
+            <span 
+              v-if="wishlistStore.itemCount > 0" 
+              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black rounded-full h-5 w-5 flex items-center justify-center shadow-lg shadow-red-500/30 border-2 border-white animate-in zoom-in"
+            >
+              {{ wishlistStore.itemCount }}
+            </span>
+          </router-link>
+
           <!-- Cart -->
           <router-link to="/cart" class="relative group p-2 rounded-xl hover:bg-gray-100 transition">
             <ShoppingBagIcon class="w-6 h-6 text-gray-700 group-hover:text-blue-600 transition" />
@@ -186,16 +197,18 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import { useCartStore } from '../stores/cart';
 import { useAuthStore } from '../stores/auth';
+import { useWishlistStore } from '../stores/wishlist';
 import { 
   ShoppingBagIcon, 
   CameraIcon, 
   MagnifyingGlassIcon, 
   UserIcon,
+  HeartIcon,
   Bars3Icon,
   XMarkIcon,
   ChevronDownIcon,
@@ -207,6 +220,13 @@ const router = useRouter();
 const route = useRoute();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const wishlistStore = useWishlistStore();
+
+onMounted(() => {
+  if (authStore.token) {
+    wishlistStore.fetchWishlist();
+  }
+});
 
 const searchQuery = ref(route.query.search || '');
 const isMobileMenuOpen = ref(false);

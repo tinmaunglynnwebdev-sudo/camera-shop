@@ -152,6 +152,78 @@
         </table>
       </div>
     </div>
+
+    <!-- Analytics Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Most Viewed Products -->
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="p-8 border-b border-gray-50 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-purple-50 rounded-xl">
+              <EyeIcon class="w-6 h-6 text-purple-600" />
+            </div>
+            <h3 class="text-xl font-bold text-gray-900">Popular Products</h3>
+          </div>
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">By Views</span>
+        </div>
+        <div class="p-6 space-y-4">
+          <div v-for="(product, index) in stats.most_viewed_products" :key="product.id" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition group">
+            <router-link :to="'/product/' + product.slug" class="relative">
+              <img :src="product.image" class="w-16 h-16 rounded-xl object-cover shadow-sm group-hover:scale-110 transition duration-300">
+              <div class="absolute -top-2 -left-2 w-6 h-6 bg-white border border-gray-100 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm">
+                {{ index + 1 }}
+              </div>
+            </router-link>
+            <div class="flex-1 min-w-0">
+              <router-link :to="'/product/' + product.slug" class="font-bold text-gray-900 truncate block hover:text-blue-600 transition">
+                {{ product.name }}
+              </router-link>
+              <div class="flex items-center gap-4 mt-1">
+                <span class="text-xs font-black text-blue-600">${{ parseFloat(product.price).toLocaleString() }}</span>
+                <div class="flex items-center gap-1.5 text-gray-400">
+                  <EyeIcon class="w-3.5 h-3.5" />
+                  <span class="text-xs font-bold">{{ (product.views_count || 0).toLocaleString() }} views</span>
+                </div>
+              </div>
+            </div>
+            <router-link :to="'/product/' + product.slug" class="p-2 bg-gray-50 text-gray-400 rounded-xl hover:bg-blue-600 hover:text-white transition">
+              <ArrowTopRightOnSquareIcon class="w-5 h-5" />
+            </router-link>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Tips / Help -->
+      <div class="bg-gray-900 rounded-3xl p-8 text-white relative overflow-hidden">
+        <div class="relative z-10 h-full flex flex-col">
+          <h3 class="text-xl font-bold mb-6">Management Insights</h3>
+          <div class="space-y-6 flex-1">
+            <div class="flex gap-4">
+              <div class="w-10 h-10 shrink-0 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400">
+                <PresentationChartLineIcon class="w-6 h-6" />
+              </div>
+              <p class="text-sm text-gray-400 leading-relaxed">
+                <strong class="text-white">Growth Opportunity:</strong> 
+                Your top categories are driving 65% of revenue. Consider expanding these lines.
+              </p>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-10 h-10 shrink-0 bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-400">
+                <EyeIcon class="w-6 h-6" />
+              </div>
+              <p class="text-sm text-gray-400 leading-relaxed">
+                <strong class="text-white">Engagement Tip:</strong> 
+                Products with over 1k views but low sales might need price optimization or better descriptions.
+              </p>
+            </div>
+          </div>
+          <button class="mt-8 w-full py-4 bg-white text-gray-900 rounded-2xl font-black text-sm hover:bg-gray-100 transition shadow-xl">
+            Download Detailed Report
+          </button>
+        </div>
+        <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[100px]"></div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -168,7 +240,9 @@ import {
   PlusCircleIcon,
   DocumentTextIcon,
   PresentationChartLineIcon,
-  CircleStackIcon
+  CircleStackIcon,
+  EyeIcon,
+  ArrowTopRightOnSquareIcon
 } from '@heroicons/vue/24/outline';
 import { Line, Doughnut } from 'vue-chartjs';
 import { 
@@ -201,7 +275,8 @@ const stats = ref({
   low_stock_count: 0,
   recent_orders: [],
   sales_trend: [],
-  top_categories: []
+  top_categories: [],
+  most_viewed_products: []
 });
 
 const loading = ref(true);

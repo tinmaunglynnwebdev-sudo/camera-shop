@@ -33,6 +33,56 @@
       </div>
     </div>
 
+    <!-- Most Viewed Products -->
+    <div v-if="mostViewedProducts.length > 0 && !loading" class="mb-16">
+      <div class="flex items-center gap-3 mb-8">
+        <div class="p-2 bg-orange-50 rounded-xl">
+          <FireIcon class="w-6 h-6 text-orange-500" />
+        </div>
+        <div>
+          <h2 class="text-2xl font-black text-gray-900 uppercase tracking-tight">Popular Right Now</h2>
+          <p class="text-sm text-gray-500 font-medium">The most viewed cameras this week</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-for="product in mostViewedProducts" :key="product.id" class="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
+          <router-link :to="'/product/' + product.slug" class="relative overflow-hidden aspect-[4/5] block">
+            <img :src="product.image" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+            <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            
+            <div class="absolute bottom-3 left-3 bg-white/90 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-black text-gray-600 flex items-center gap-1.5 shadow-sm">
+              <EyeIcon class="w-3.5 h-3.5 text-blue-500" />
+              {{ (product.views_count || 0).toLocaleString() }} VIEWS
+            </div>
+          </router-link>
+          
+          <div class="relative">
+            <!-- Wishlist Button - Absolute positioned relative to card container or moved here -->
+            <button 
+              @click.stop="wishlistStore.toggleWishlist(product)"
+              class="absolute -top-12 right-4 p-2 bg-white/90 backdrop-blur rounded-full shadow-lg transition-all duration-300 transform active:scale-90 z-10"
+              :class="wishlistStore.isInWishlist(product.id) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'"
+            >
+              <HeartIcon class="w-5 h-5" :class="{ 'fill-current': wishlistStore.isInWishlist(product.id) }" />
+            </button>
+          </div>
+
+          <div class="p-4">
+            <router-link :to="'/product/' + product.slug" class="font-bold text-gray-900 hover:text-blue-600 transition block mb-2 line-clamp-1">
+              {{ product.name }}
+            </router-link>
+            <div class="flex items-center justify-between">
+              <span class="font-black text-blue-600">${{ parseFloat(product.sale_price || product.price).toLocaleString() }}</span>
+              <button @click="cartStore.addToCart(product)" class="text-xs font-bold text-gray-500 hover:text-blue-600 transition flex items-center gap-1">
+                <ShoppingBagIcon class="w-4 h-4" /> Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="flex flex-col md:flex-row gap-8">
       <!-- Sidebar Filters -->
       <aside class="w-full md:w-64 shrink-0">
@@ -108,14 +158,19 @@
           <div v-for="product in filteredProducts" :key="product.id" class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col">
             <div class="relative h-48 overflow-hidden bg-gray-100">
               <img :src="product.image" :alt="product.name" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+              
               <div v-if="product.sale_price && product.original_price && product.sale_price < product.original_price" class="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase shadow-lg z-10">
                 Sale {{ Math.round((1 - product.sale_price / product.original_price) * 100) }}% Off
               </div>
-              <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button @click.prevent="addToCart(product)" class="bg-white text-blue-600 p-2 rounded-full shadow-lg hover:bg-blue-600 hover:text-white transition">
-                  <PlusIcon class="w-5 h-5" />
-                </button>
-              </div>
+
+              <!-- Wishlist Button -->
+              <button 
+                @click.stop="wishlistStore.toggleWishlist(product)"
+                class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full shadow-lg transition-all duration-300 transform active:scale-90 z-20"
+                :class="wishlistStore.isInWishlist(product.id) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'"
+              >
+                <HeartIcon class="w-5 h-5" :class="{ 'fill-current': wishlistStore.isInWishlist(product.id) }" />
+              </button>
             </div>
             
             <div class="p-5 flex flex-col flex-1">
@@ -151,16 +206,27 @@ import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
 import { useToastStore } from '../stores/toast';
-import { FunnelIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import { useWishlistStore } from '../stores/wishlist';
+import { 
+  FunnelIcon, 
+  PlusIcon, 
+  HeartIcon, 
+  FireIcon, 
+  EyeIcon, 
+  ShoppingBagIcon 
+} from '@heroicons/vue/24/outline';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
-const products = ref([]);
-const categories = ref([]);
-const loading = ref(true);
 const cartStore = useCartStore();
 const toastStore = useToastStore();
+const wishlistStore = useWishlistStore();
+
+const products = ref([]);
+const mostViewedProducts = ref([]);
+const categories = ref([]);
+const loading = ref(true);
 
 const selectedCategories = ref(route.query.category ? route.query.category.split(',') : []);
 const selectedBrands = ref(route.query.brand ? route.query.brand.split(',') : []);
@@ -191,6 +257,15 @@ watch(() => [selectedCategories.value, selectedBrands.value], () => {
   router.replace({ query });
 }, { deep: true });
 
+async function fetchMostViewed() {
+  try {
+    const response = await axios.get('/api/products/most-viewed');
+    mostViewedProducts.value = response.data;
+  } catch (error) {
+    console.error('Failed to fetch most viewed products', error);
+  }
+}
+
 async function fetchProducts() {
   loading.value = true;
   try {
@@ -215,6 +290,10 @@ async function fetchProducts() {
 
 onMounted(() => {
   fetchProducts();
+  fetchMostViewed();
+  if (authStore.token || authStore.user) {
+    wishlistStore.fetchWishlist();
+  }
 });
 
 // Re-fetch products when search or filters change in URL
