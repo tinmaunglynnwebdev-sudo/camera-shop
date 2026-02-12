@@ -35,47 +35,65 @@
 
     <!-- Most Viewed Products -->
     <div v-if="mostViewedProducts.length > 0 && !loading" class="mb-16">
-      <div class="flex items-center gap-3 mb-8">
-        <div class="p-2 bg-orange-50 rounded-xl">
-          <FireIcon class="w-6 h-6 text-orange-500" />
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-orange-50 rounded-xl">
+            <FireIcon class="w-6 h-6 text-orange-500" />
+          </div>
+          <div>
+            <h2 class="text-2xl font-black text-gray-900 uppercase tracking-tight">Popular Right Now</h2>
+            <p class="text-sm text-gray-500 font-medium">The most viewed cameras this week</p>
+          </div>
         </div>
-        <div>
-          <h2 class="text-2xl font-black text-gray-900 uppercase tracking-tight">Popular Right Now</h2>
-          <p class="text-sm text-gray-500 font-medium">The most viewed cameras this week</p>
+        
+        <!-- Navigation Buttons -->
+        <div class="hidden md:flex gap-2">
+          <button @click="scrollSlider('left')" class="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition shadow-sm">
+            <ChevronLeftIcon class="w-5 h-5 text-gray-600" />
+          </button>
+          <button @click="scrollSlider('right')" class="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition shadow-sm">
+            <ChevronRightIcon class="w-5 h-5 text-gray-600" />
+          </button>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div v-for="product in mostViewedProducts" :key="product.id" class="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
-          <router-link :to="'/product/' + product.slug" class="relative overflow-hidden aspect-[4/5] block">
-            <img :src="product.image" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+      <div 
+        ref="popularSlider"
+        class="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+        style="-ms-overflow-style: none; scrollbar-width: none;"
+      >
+        <div 
+          v-for="product in mostViewedProducts" 
+          :key="product.id" 
+          class="flex-none w-44 snap-start group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300"
+        >
+          <router-link :to="'/product/' + product.slug" class="relative overflow-hidden aspect-square block">
+            <img :src="product.image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
             <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             
-            <div class="absolute bottom-3 left-3 bg-white/90 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-black text-gray-600 flex items-center gap-1.5 shadow-sm">
-              <EyeIcon class="w-3.5 h-3.5 text-blue-500" />
-              {{ (product.views_count || 0).toLocaleString() }} VIEWS
+            <div class="absolute bottom-1.5 left-1.5 bg-white/90 backdrop-blur px-1.5 py-0.5 rounded-md text-[8px] font-black text-gray-600 flex items-center gap-1 shadow-sm">
+              <EyeIcon class="w-2.5 h-2.5 text-blue-500" />
+              {{ (product.views_count || 0).toLocaleString() }}
             </div>
+
+            <!-- Wishlist Button -->
+            <button 
+              @click.prevent.stop="wishlistStore.toggleWishlist(product)"
+              class="absolute top-1.5 right-1.5 p-1.5 bg-white/90 backdrop-blur rounded-full shadow-sm transition-all duration-300 transform active:scale-90 opacity-0 group-hover:opacity-100"
+              :class="wishlistStore.isInWishlist(product.id) ? 'text-red-500 opacity-100' : 'text-gray-400 hover:text-red-500'"
+            >
+              <HeartIcon class="w-3.5 h-3.5" :class="{ 'fill-current': wishlistStore.isInWishlist(product.id) }" />
+            </button>
           </router-link>
           
-          <div class="relative">
-            <!-- Wishlist Button - Absolute positioned relative to card container or moved here -->
-            <button 
-              @click.stop="wishlistStore.toggleWishlist(product)"
-              class="absolute -top-12 right-4 p-2 bg-white/90 backdrop-blur rounded-full shadow-lg transition-all duration-300 transform active:scale-90 z-10"
-              :class="wishlistStore.isInWishlist(product.id) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'"
-            >
-              <HeartIcon class="w-5 h-5" :class="{ 'fill-current': wishlistStore.isInWishlist(product.id) }" />
-            </button>
-          </div>
-
-          <div class="p-4">
-            <router-link :to="'/product/' + product.slug" class="font-bold text-gray-900 hover:text-blue-600 transition block mb-2 line-clamp-1">
+          <div class="p-2.5">
+            <router-link :to="'/product/' + product.slug" class="font-bold text-xs text-gray-900 hover:text-blue-600 transition block mb-1 line-clamp-1">
               {{ product.name }}
             </router-link>
             <div class="flex items-center justify-between">
-              <span class="font-black text-blue-600">${{ parseFloat(product.sale_price || product.price).toLocaleString() }}</span>
-              <button @click="cartStore.addToCart(product)" class="text-xs font-bold text-gray-500 hover:text-blue-600 transition flex items-center gap-1">
-                <ShoppingBagIcon class="w-4 h-4" /> Add
+              <span class="font-black text-blue-600 text-xs">${{ parseFloat(product.sale_price || product.price).toLocaleString() }}</span>
+              <button @click="cartStore.addToCart(product)" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition">
+                <ShoppingBagIcon class="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -130,7 +148,7 @@
             <h2 class="text-2xl font-bold text-gray-900">
               {{ $route.query.search ? 'Search Results' : 'Latest Arrivals' }}
             </h2>
-            <span class="text-gray-500 text-sm">{{ filteredProducts.length }} products found</span>
+            <span class="text-gray-500 text-sm">{{ totalProducts }} products found</span>
           </div>
           <p v-if="$route.query.search" class="text-gray-500 mt-1">
             Showing results for "<span class="text-blue-600 font-medium">{{ $route.query.search }}</span>"
@@ -194,13 +212,27 @@
             </div>
           </div>
         </div>
+
+        <!-- Infinite Scroll Sentinel & Loading State -->
+        <div ref="sentinel" class="py-12 flex flex-col items-center justify-center">
+          <div v-if="loadingMore" class="flex flex-col items-center gap-3">
+            <div class="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+            <p class="text-sm font-bold text-gray-400 uppercase tracking-widest">Loading more cameras...</p>
+          </div>
+          
+          <div v-else-if="currentPage >= lastPage && filteredProducts.length > 0" class="flex flex-col items-center gap-4 text-gray-400">
+            <div class="h-px w-24 bg-gray-100"></div>
+            <p class="text-sm font-black uppercase tracking-[0.2em]">You've reached the end</p>
+            <div class="h-px w-24 bg-gray-100"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
@@ -213,7 +245,9 @@ import {
   HeartIcon, 
   FireIcon, 
   EyeIcon, 
-  ShoppingBagIcon 
+  ShoppingBagIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/vue/24/outline';
 
 const route = useRoute();
@@ -227,6 +261,24 @@ const products = ref([]);
 const mostViewedProducts = ref([]);
 const categories = ref([]);
 const loading = ref(true);
+const loadingMore = ref(false);
+const popularSlider = ref(null);
+const sentinel = ref(null);
+
+const currentPage = ref(1);
+const lastPage = ref(1);
+const totalProducts = ref(0);
+
+let observer = null;
+
+function scrollSlider(direction) {
+  if (!popularSlider.value) return;
+  const scrollAmount = 200;
+  popularSlider.value.scrollBy({
+    left: direction === 'left' ? -scrollAmount : scrollAmount,
+    behavior: 'smooth'
+  });
+}
 
 const selectedCategories = ref(route.query.category ? route.query.category.split(',') : []);
 const selectedBrands = ref(route.query.brand ? route.query.brand.split(',') : []);
@@ -266,39 +318,80 @@ async function fetchMostViewed() {
   }
 }
 
-async function fetchProducts() {
-  loading.value = true;
+async function fetchProducts(page = 1, append = false) {
+  if (page === 1) loading.value = true;
+  else loadingMore.value = true;
+
   try {
-    const params = {};
+    const params = { page };
     if (route.query.search) params.search = route.query.search;
     if (route.query.category) params.category = route.query.category;
     if (route.query.brand) params.brand = route.query.brand;
     
     const [prodRes, catRes] = await Promise.all([
       axios.get('/api/products', { params }),
-      axios.get('/api/categories')
+      page === 1 ? axios.get('/api/categories') : Promise.resolve({ data: categories.value })
     ]);
-    products.value = prodRes.data;
-    categories.value = catRes.data;
+
+    const paginatedData = prodRes.data;
+    if (append) {
+      products.value = [...products.value, ...paginatedData.data];
+    } else {
+      products.value = paginatedData.data;
+    }
+
+    currentPage.value = paginatedData.current_page;
+    lastPage.value = paginatedData.last_page;
+    totalProducts.value = paginatedData.total;
+    
+    if (page === 1) categories.value = catRes.data;
   } catch (error) {
     console.error('Error fetching data:', error);
     toastStore.addToast('Failed to load products', 'error');
   } finally {
     loading.value = false;
+    loadingMore.value = false;
   }
 }
 
-onMounted(() => {
-  fetchProducts();
+async function loadMore() {
+  if (currentPage.value < lastPage.value && !loadingMore.value) {
+    await fetchProducts(currentPage.value + 1, true);
+  }
+}
+
+function setupObserver() {
+  if (observer) observer.disconnect();
+
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !loading.value && !loadingMore.value) {
+      loadMore();
+    }
+  }, { threshold: 0.1 });
+
+  if (sentinel.value) {
+    observer.observe(sentinel.value);
+  }
+}
+
+onMounted(async () => {
+  await fetchProducts();
   fetchMostViewed();
   if (authStore.token || authStore.user) {
     wishlistStore.fetchWishlist();
   }
+  nextTick(() => {
+    setupObserver();
+  });
+});
+
+onUnmounted(() => {
+  if (observer) observer.disconnect();
 });
 
 // Re-fetch products when search or filters change in URL
 watch(() => [route.query.search, route.query.category, route.query.brand], () => {
-  fetchProducts();
+  fetchProducts(1, false);
 });
 
 const filteredProducts = computed(() => {

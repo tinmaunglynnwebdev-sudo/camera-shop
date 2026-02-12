@@ -76,7 +76,7 @@ class DashboardController extends Controller
 
         $mostViewedProducts = Product::orderBy('views_count', 'desc')
             ->take(5)
-            ->get(['id', 'name', 'views_count', 'price', 'image']);
+            ->get(['id', 'name', 'slug', 'views_count', 'price', 'image']);
 
         return response()->json([
             'total_orders' => $totalOrders,

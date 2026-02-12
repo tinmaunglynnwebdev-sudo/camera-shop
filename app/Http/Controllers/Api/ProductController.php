@@ -40,7 +40,7 @@ class ProductController extends Controller
             });
         }
 
-        return response()->json($query->get());
+        return response()->json($query->paginate(15));
     }
 
     public function show($slug)

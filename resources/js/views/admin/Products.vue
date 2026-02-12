@@ -1,10 +1,75 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
       <h1 class="text-3xl font-bold text-gray-800">Products</h1>
       <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition flex items-center gap-2">
         <PlusIcon class="w-5 h-5" /> Add Product
       </button>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Search Name</label>
+          <div class="relative">
+            <input 
+              v-model="filters.name" 
+              @input="debouncedFetch"
+              type="text" 
+              placeholder="Filter by name..." 
+              class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+            >
+            <MagnifyingGlassIcon class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Min Price</label>
+            <input 
+              v-model="filters.min_price" 
+              @input="debouncedFetch"
+              type="number" 
+              placeholder="0" 
+              class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+            >
+          </div>
+          <div>
+            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Max Price</label>
+            <input 
+              v-model="filters.max_price" 
+              @input="debouncedFetch"
+              type="number" 
+              placeholder="9999" 
+              class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+            >
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Stock Status</label>
+          <select 
+            v-model="filters.stock_status" 
+            @change="fetchData"
+            class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition appearance-none cursor-pointer"
+          >
+            <option value="">All Stock Status</option>
+            <option value="in_stock">In Stock (5+)</option>
+            <option value="low_stock">Low Stock (< 5)</option>
+            <option value="out_of_stock">Out of Stock</option>
+          </select>
+        </div>
+
+        <div class="flex items-end">
+          <button 
+            @click="clearFilters" 
+            class="w-full px-4 py-2 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition text-sm"
+          >
+            Clear Filters
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="loading" class="flex justify-center py-12">
@@ -156,7 +221,7 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useToastStore } from '../../stores/toast';
-import { PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, XMarkIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
 
 const products = ref([]);
 const categories = ref([]);
@@ -167,6 +232,31 @@ const isEditing = ref(false);
 const form = ref({});
 const tempSpecKeys = ref({});
 const toastStore = useToastStore();
+
+const filters = ref({
+  name: '',
+  min_price: '',
+  max_price: '',
+  stock_status: ''
+});
+
+let debounceTimer;
+function debouncedFetch() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    fetchData();
+  }, 500);
+}
+
+function clearFilters() {
+  filters.value = {
+    name: '',
+    min_price: '',
+    max_price: '',
+    stock_status: ''
+  };
+  fetchData();
+}
 
 function updateSpecKey(oldKey) {
   const newKey = tempSpecKeys.value[oldKey];
@@ -210,7 +300,7 @@ onMounted(async () => {
 async function fetchData() {
   try {
     const [prodRes, catRes] = await Promise.all([
-      axios.get('/api/admin/products'),
+      axios.get('/api/admin/products', { params: filters.value }),
       axios.get('/api/categories')
     ]);
     products.value = prodRes.data;

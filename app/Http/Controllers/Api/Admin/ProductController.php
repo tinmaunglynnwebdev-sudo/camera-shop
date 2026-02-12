@@ -9,9 +9,35 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Product::with(['category', 'brand'])->latest()->get());
+        $query = Product::with(['category', 'brand']);
+
+        // Filter by name
+        if ($request->filled('name')) {
+            $query->where('name', 'like', '%' . $request->name . '%');
+        }
+
+        // Filter by price range
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', $request->min_price);
+        }
+        if ($request->filled('max_price')) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        // Filter by stock status
+        if ($request->filled('stock_status')) {
+            if ($request->stock_status === 'out_of_stock') {
+                $query->where('stock', '<=', 0);
+            } elseif ($request->stock_status === 'low_stock') {
+                $query->where('stock', '>', 0)->where('stock', '<', 5);
+            } elseif ($request->stock_status === 'in_stock') {
+                $query->where('stock', '>=', 5);
+            }
+        }
+
+        return response()->json($query->latest()->get());
     }
 
     public function store(Request $request)

@@ -36,6 +36,10 @@ class DatabaseSeeder extends Seeder
         $cameras = \App\Models\Category::create(['name' => 'Cameras', 'slug' => 'cameras']);
         $lenses = \App\Models\Category::create(['name' => 'Lenses', 'slug' => 'lenses']);
 
+        $this->call([
+            ProductSeeder::class,
+        ]);
+
         \App\Models\Product::create([
             'name' => 'Canon EOS R5',
             'slug' => 'canon-eos-r5',
