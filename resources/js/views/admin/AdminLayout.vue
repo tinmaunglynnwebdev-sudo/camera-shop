@@ -8,6 +8,14 @@
       
       <nav class="flex-1 p-4 space-y-2">
         <router-link 
+          to="/" 
+          class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden mb-6 border border-blue-800 hover:bg-blue-800"
+        >
+          <HomeIcon class="w-5 h-5 text-blue-300" />
+          <span class="font-bold text-blue-100">Back to Shop</span>
+        </router-link>
+
+        <router-link 
           to="/admin/dashboard" 
           class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden"
           active-class="bg-blue-800 text-white shadow-lg shadow-blue-950/50"
@@ -70,7 +78,7 @@
 <script setup>
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
-import { ChartBarIcon, TagIcon, ShoppingBagIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline';
+import { ChartBarIcon, TagIcon, ShoppingBagIcon, ArrowRightOnRectangleIcon, HomeIcon } from '@heroicons/vue/24/outline';
 
 const route = useRoute();
 const authStore = useAuthStore();
