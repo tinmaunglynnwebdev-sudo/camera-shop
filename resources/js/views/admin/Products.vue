@@ -116,6 +116,68 @@
       </table>
     </div>
 
+    <!-- Pagination -->
+    <div v-if="pagination.total > 0" class="mt-6 flex items-center justify-between bg-white px-6 py-4 rounded-xl border border-gray-100 shadow-sm">
+      <div class="flex flex-1 justify-between sm:hidden">
+        <button 
+          @click="changePage(pagination.current_page - 1)" 
+          :disabled="pagination.current_page === 1" 
+          class="relative inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
+        >
+          Previous
+        </button>
+        <button 
+          @click="changePage(pagination.current_page + 1)" 
+          :disabled="pagination.current_page === pagination.last_page" 
+          class="relative ml-3 inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
+        >
+          Next
+        </button>
+      </div>
+      <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-500">
+            Showing <span class="font-bold text-gray-900">{{ pagination.from }}</span> to <span class="font-bold text-gray-900">{{ pagination.to }}</span> of <span class="font-bold text-gray-900">{{ pagination.total }}</span> results
+          </p>
+        </div>
+        <div>
+          <nav class="isolate inline-flex -space-x-px rounded-xl shadow-sm overflow-hidden border border-gray-200" aria-label="Pagination">
+            <button 
+              @click="changePage(pagination.current_page - 1)" 
+              :disabled="pagination.current_page === 1" 
+              class="relative inline-flex items-center px-3 py-2 text-gray-400 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 transition"
+            >
+              <span class="sr-only">Previous</span>
+              <ChevronLeftIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+            
+            <button 
+              v-for="page in visiblePages" 
+              :key="page" 
+              @click="changePage(page)" 
+              :class="[
+                page === pagination.current_page 
+                  ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600' 
+                  : 'text-gray-900 hover:bg-gray-50 focus:outline-offset-0'
+              ]" 
+              class="relative inline-flex items-center px-4 py-2 text-sm font-bold transition border-x border-gray-200"
+            >
+              {{ page }}
+            </button>
+
+            <button 
+              @click="changePage(pagination.current_page + 1)" 
+              :disabled="pagination.current_page === pagination.last_page" 
+              class="relative inline-flex items-center px-3 py-2 text-gray-400 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 transition"
+            >
+              <span class="sr-only">Next</span>
+              <ChevronRightIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+
     <!-- Product Modal -->
     <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -221,7 +283,13 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useToastStore } from '../../stores/toast';
-import { PlusIcon, XMarkIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
+import { 
+  PlusIcon, 
+  XMarkIcon, 
+  MagnifyingGlassIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon 
+} from '@heroicons/vue/24/outline';
 
 const products = ref([]);
 const categories = ref([]);
@@ -232,6 +300,14 @@ const isEditing = ref(false);
 const form = ref({});
 const tempSpecKeys = ref({});
 const toastStore = useToastStore();
+
+const pagination = ref({
+  current_page: 1,
+  last_page: 1,
+  total: 0,
+  from: 0,
+  to: 0
+});
 
 const filters = ref({
   name: '',
@@ -244,7 +320,7 @@ let debounceTimer;
 function debouncedFetch() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    fetchData();
+    fetchData(1);
   }, 500);
 }
 
@@ -255,7 +331,32 @@ function clearFilters() {
     max_price: '',
     stock_status: ''
   };
-  fetchData();
+  fetchData(1);
+}
+
+const visiblePages = computed(() => {
+  const current = pagination.value.current_page;
+  const last = pagination.value.last_page;
+  const delta = 2;
+  const left = current - delta;
+  const right = current + delta + 1;
+  const range = [];
+  const rangeWithDots = [];
+  let l;
+
+  for (let i = 1; i <= last; i++) {
+    if (i === 1 || i === last || (i >= left && i < right)) {
+      range.push(i);
+    }
+  }
+
+  return range;
+});
+
+async function changePage(page) {
+  if (page >= 1 && page <= pagination.value.last_page) {
+    await fetchData(page);
+  }
 }
 
 function updateSpecKey(oldKey) {
@@ -283,10 +384,6 @@ function removeSpec(key) {
   delete tempSpecKeys.value[key];
 }
 
-// Mock brands fetching since we didn't create a public API for brands list yet, let's create a quick one or just fetch categories for now and hardcode brands or assume seed data
-// Ideally we should have an API for brands. I will fetch products and extract unique brands or add an endpoint.
-// For now let's assume brands id 1,2,3 exist. I'll fetch brands via a new endpoint or just use hardcoded for MVP.
-// Let's create a quick API for brands in the backend later if needed. For now I'll hardcode the ones we seeded.
 const brandOptions = [
     { id: 1, name: 'Canon' },
     { id: 2, name: 'Nikon' },
@@ -297,13 +394,24 @@ onMounted(async () => {
   await fetchData();
 });
 
-async function fetchData() {
+async function fetchData(page = 1) {
   try {
+    const params = { ...filters.value, page };
     const [prodRes, catRes] = await Promise.all([
-      axios.get('/api/admin/products', { params: filters.value }),
+      axios.get('/api/admin/products', { params }),
       axios.get('/api/categories')
     ]);
-    products.value = prodRes.data;
+    
+    const paginatedData = prodRes.data;
+    products.value = paginatedData.data;
+    pagination.value = {
+      current_page: paginatedData.current_page,
+      last_page: paginatedData.last_page,
+      total: paginatedData.total,
+      from: paginatedData.from,
+      to: paginatedData.to
+    };
+
     categories.value = catRes.data;
     brands.value = brandOptions; 
   } catch (error) {

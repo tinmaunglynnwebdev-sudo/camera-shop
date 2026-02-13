@@ -26,13 +26,6 @@ class DashboardController extends Controller
             ->get()
             ->pluck('total', 'date');
 
-        $trendData = $last7Days->map(function ($date) use ($salesTrend) {
-            return [
-                'date' => Carbon::parse($date)->format('M d'),
-                'total' => $salesTrend->get($date, 0)
-            ];
-        });
-
         // Profit & Cost Calculations
         $totalRevenue = Order::sum('total_price');
         $totalCost = DB::table('order_items')
@@ -64,7 +57,7 @@ class DashboardController extends Controller
                 'cost' => $cost,
                 'profit' => $revenue - $cost
             ];
-        });
+        })->values(); // Reset keys to ensure it's a JSON array
 
         $topCategories = Category::withCount('products')
             ->orderBy('products_count', 'desc')
